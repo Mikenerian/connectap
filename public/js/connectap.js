@@ -3,8 +3,8 @@ let t = 0;
 let u = 77;
 let mousePositions = [];
 let circlePositions = [];
-let otherMousePositions = [];
-let otherCirclePositions = [];
+let otherMousePositions = {};
+let otherCirclePositions = {};
 let maxStoreFrames = 100;
 let delayRate = 32;
 let cnt = 0;
@@ -13,14 +13,16 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   noStroke();
   circlePositions.push({x: width / 2, y: height / 2});
-  otherCirclePositions.push({x: width / 2, y: height / 2});
 
   // Connect to the WebSocket Server
   socket = io.connect('http://localhost:3000');
 
   // Add a listener for the 'mouse' event from the server
   socket.on('mouse', (data) => {
-    otherMousePositions.push({x: data.x, y: data.y});
+    if (!otherMousePositions[data.id]) {
+      otherMousePositions[data.id] = [];
+    }
+    otherMousePositions[data.id].push({x: data.x, y: data.y});
   });
 }
 
@@ -54,19 +56,21 @@ function draw() {
   }
 
   // Draw other's circles only if otherMousePositions and otherCirclePositions have data
-  if (otherMousePositions.length > 0) {
-    let otherDividedX = otherCirclePositions[otherCirclePositions.length - 1].x + (otherMousePositions[otherMousePositions.length - 1].x - otherCirclePositions[otherCirclePositions.length - 1].x) / delayRate;
-    let otherDividedY = otherCirclePositions[otherCirclePositions.length - 1].y + (otherMousePositions[otherMousePositions.length - 1].y - otherCirclePositions[otherCirclePositions.length - 1].y) / delayRate;
+  for (let clientId in otherMousePositions) {
+    if (otherMousePositions.hasOwnProperty(clientId)) {
+      let mPos = otherMousePositions[clientId];
+      if (!otherCirclePositions[clientId]) {
+        otherCirclePositions[clientId] = [{x: width / 2, y: height / 2}];
+      }
+      let cPos = otherCirclePositions[clientId];
 
-    drawCircles(otherDividedX, otherDividedY);
-    otherCirclePositions.push({x: otherDividedX, y: otherDividedY});
-    if (otherCirclePositions.length > maxStoreFrames) {
-      otherCirclePositions.shift();
-    }
+      if (mPos.length > 0) {
+        let otherDividedX = cPos[cPos.length -1].x + (mPos[mPos.length - 1].x - cPos[cPos.length -1].x) / delayRate;
+        let otherDividedY = cPos[cPos.length -1].y + (mPos[mPos.length - 1].y - cPos[cPos.length -1].y) / delayRate;
 
-    otherCirclePositions.push({x: otherDividedX, y: otherDividedY});
-    if (otherCirclePositions.length > maxStoreFrames) {
-      otherCirclePositions.shift();
+        drawCircles(otherDividedX, otherDividedY);
+        otherCirclePositions[clientId].push({x: otherDividedX, y: otherDividedY});
+      }
     }
   }
 

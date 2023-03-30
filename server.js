@@ -11,7 +11,7 @@ io.on('connection', (socket) => {
   socket.on('mouse', (data) => {
     // console.log(`Mouse position from ${socket.id}:`, data);
     // 他のクライアントにマウスの位置座標をブロードキャスト
-    socket.broadcast.emit('mouse', data);
+    socket.broadcast.emit('mouse', {id: socket.id, x: data.x, y: data.y});
   });
 
   socket.on('disconnect', () => {
