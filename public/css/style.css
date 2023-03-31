@@ -1,0 +1,21 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+  }
+  
+  header {
+    position: relative;
+    background-color: #333;
+    padding: 20px;
+    text-align: left;
+  }
+  
+  header h1 {
+    color: #fff;
+    margin: 0;
+  }
+  
+  #canvas-container {
+    top: 0;
+    left: 0;
+  }

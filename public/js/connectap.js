@@ -8,9 +8,12 @@ let otherCirclePositions = {};
 let maxStoreFrames = 100;
 let delayRate = 32;
 let cnt = 0;
+let connectionAllowed = true;
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  let headerHeight = document.querySelector("header").offsetHeight;
+  let canvas = createCanvas(windowWidth, windowHeight - headerHeight);
+  canvas.parent('canvas-container'); // 描画領域を<div>タグの中に配置
   noStroke();
   circlePositions.push({x: width / 2, y: height / 2});
 
@@ -19,10 +22,18 @@ function setup() {
 
   // Add a listener for the 'mouse' event from the server
   socket.on('mouse', (data) => {
-    if (!otherMousePositions[data.id]) {
-      otherMousePositions[data.id] = [];
+    if (connectionAllowed) {
+      if (!otherMousePositions[data.id]) {
+        otherMousePositions[data.id] = [];
+      }
+      otherMousePositions[data.id].push({x: data.x, y: data.y});
     }
-    otherMousePositions[data.id].push({x: data.x, y: data.y});
+  });
+
+  socket.on('connectionStatus', (data) => {
+    if (data.status === 'rejected') {
+      connectionAllowed = false;
+    }
   });
 }
 
@@ -56,20 +67,22 @@ function draw() {
   }
 
   // Draw other's circles only if otherMousePositions and otherCirclePositions have data
-  for (let clientId in otherMousePositions) {
-    if (otherMousePositions.hasOwnProperty(clientId)) {
-      let mPos = otherMousePositions[clientId];
-      if (!otherCirclePositions[clientId]) {
-        otherCirclePositions[clientId] = [{x: width / 2, y: height / 2}];
-      }
-      let cPos = otherCirclePositions[clientId];
+  if (connectionAllowed) {
+    for (let clientId in otherMousePositions) {
+      if (otherMousePositions.hasOwnProperty(clientId)) {
+        let mPos = otherMousePositions[clientId];
+        if (!otherCirclePositions[clientId]) {
+          otherCirclePositions[clientId] = [{x: width / 2, y: height / 2}];
+        }
+        let cPos = otherCirclePositions[clientId];
 
-      if (mPos.length > 0) {
-        let otherDividedX = cPos[cPos.length -1].x + (mPos[mPos.length - 1].x - cPos[cPos.length -1].x) / delayRate;
-        let otherDividedY = cPos[cPos.length -1].y + (mPos[mPos.length - 1].y - cPos[cPos.length -1].y) / delayRate;
+        if (mPos.length > 0) {
+          let otherDividedX = cPos[cPos.length -1].x + (mPos[mPos.length - 1].x - cPos[cPos.length -1].x) / delayRate;
+          let otherDividedY = cPos[cPos.length -1].y + (mPos[mPos.length - 1].y - cPos[cPos.length -1].y) / delayRate;
 
-        drawCircles(otherDividedX, otherDividedY);
-        otherCirclePositions[clientId].push({x: otherDividedX, y: otherDividedY});
+          drawCircles(otherDividedX, otherDividedY);
+          otherCirclePositions[clientId].push({x: otherDividedX, y: otherDividedY});
+        }
       }
     }
   }
